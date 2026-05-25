@@ -1,0 +1,9 @@
+{
+  "total_documents": 131,
+  "categories": {
+    "covid": 21,
+    "clinical-trial": 80,
+    "drug-label": 30
+  },
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+}
