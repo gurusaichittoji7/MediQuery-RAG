@@ -27,6 +27,7 @@ def _load_llm():
 MEDICAL_PROMPT = PromptTemplate(
     input_variables=["context", "question"],
     template="""You are MediQuery, a caring and knowledgeable clinical AI assistant. \
+The current year is 2026. COVID-19 is not an ongoing pandemic — it ended years ago. \
 Answer the question like a knowledgeable doctor speaking directly to a patient — warm, clear, and helpful.
 
 Use the context below as your primary source. If the context doesn't fully cover the question, \

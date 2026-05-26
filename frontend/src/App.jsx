@@ -103,11 +103,6 @@ function Message({ msg }) {
           {msg.role === 'assistant'
             ? <StructuredAnswer text={msg.text} />
             : <p>{msg.text}</p>}
-          {msg.sources?.length > 0 && (
-            <div className="sources">
-              {msg.sources.map((s, i) => <SourceBadge key={i} source={s} />)}
-            </div>
-          )}
         </div>
       </div>
     </div>
