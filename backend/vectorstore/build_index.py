@@ -13,6 +13,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from ingestion.fetch_disease import fetch_all as fetch_disease
 from ingestion.fetch_trials import fetch_all as fetch_trials
 from ingestion.fetch_fda import fetch_all as fetch_fda
+from ingestion.fetch_medlineplus import fetch_all as fetch_medlineplus
+from ingestion.fetch_who import fetch_all as fetch_who
+from ingestion.fetch_lab_ranges import fetch_all as fetch_lab_ranges
+from ingestion.fetch_cms import fetch_all as fetch_cms
 
 INDEX_DIR = Path(__file__).parent / "faiss_index"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
@@ -43,6 +47,10 @@ def build_index():
     all_chunks += fetch_disease()
     all_chunks += fetch_trials()
     all_chunks += fetch_fda()
+    all_chunks += fetch_medlineplus()
+    all_chunks += fetch_who()
+    all_chunks += fetch_lab_ranges()
+    all_chunks += fetch_cms()
     print(f"Total chunks collected: {len(all_chunks)}")
 
     print("\n[2/4] Converting to Documents...")
@@ -94,7 +102,6 @@ def load_index(embeddings=None):
             encode_kwargs={"normalize_embeddings": True},
         )
     return FAISS.load_local(str(INDEX_DIR), embeddings, allow_dangerous_deserialization=True)
-
 
 if __name__ == "__main__":
     build_index()

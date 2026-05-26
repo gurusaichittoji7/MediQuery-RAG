@@ -1,9 +1,13 @@
 {
-  "total_documents": 131,
+  "total_documents": 306,
   "categories": {
     "covid": 21,
     "clinical-trial": 80,
-    "drug-label": 30
+    "drug-label": 30,
+    "medical-condition": 75,
+    "global-health": 60,
+    "lab-ranges": 20,
+    "hospital": 20
   },
   "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
 }
