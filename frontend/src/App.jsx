@@ -2,14 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { queryMediQuery, fetchStats } from './lib/api'
 import './index.css'
 
-const SUGGESTED = [
-  'What are the current clinical trials for Type 2 diabetes?',
-  'What are the warnings for metformin?',
-  'How many COVID-19 cases are there globally?',
-  'What treatments exist for Alzheimer\'s disease?',
-  'What is the dosage for lisinopril?',
-]
-
 function SourceBadge({ source }) {
   if (source.includes('clinicaltrials')) return <span className="badge trials">🔬 ClinicalTrials</span>
   if (source.includes('disease.sh')) return <span className="badge disease">🦠 Disease.sh</span>
@@ -191,15 +183,8 @@ export default function App() {
               <h2>What can I help you with?</h2>
               <p>
                 Ask me anything about diseases, clinical trials, drug labels,
-                or medical research — powered by real public health data.
+                or medical research, powered by real public health data.
               </p>
-            </div>
-            <div className="suggestions">
-              {SUGGESTED.map((s, i) => (
-                <button key={i} className="suggestion" onClick={() => send(s)}>
-                  {s}
-                </button>
-              ))}
             </div>
           </>
         ) : (
