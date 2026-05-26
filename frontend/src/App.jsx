@@ -11,22 +11,98 @@ const SUGGESTED = [
 ]
 
 function SourceBadge({ source }) {
-  const label = source.includes('clinicaltrials') ? '🔬 ClinicalTrials'
-    : source.includes('disease.sh') ? '🦠 Disease.sh'
-    : source.includes('openfda') ? '💊 OpenFDA'
-    : '📄 Source'
-  return <span className="badge">{label}</span>
+  if (source.includes('clinicaltrials')) return <span className="badge trials">🔬 ClinicalTrials</span>
+  if (source.includes('disease.sh')) return <span className="badge disease">🦠 Disease.sh</span>
+  if (source.includes('openfda')) return <span className="badge fda">💊 OpenFDA</span>
+  if (source.includes('medlineplus')) return <span className="badge trials">📚 MedlinePlus</span>
+  if (source.includes('who.int')) return <span className="badge disease">🌍 WHO</span>
+  if (source.includes('lab-reference')) return <span className="badge fda">🧪 Lab Ranges</span>
+  if (source.includes('cms.gov')) return <span className="badge trials">🏥 CMS</span>
+  return <span className="badge">📄 Source</span>
+}
+
+function parseAnswer(text) {
+  const sections = [
+    { key: 'current', label: 'Current standard', color: 'info', emoji: '📋' },
+    { key: 'lifestyle', label: 'Lifestyle & care', color: 'success', emoji: '🥗' },
+    { key: 'research', label: 'Emerging research', color: 'warning', emoji: '🔬' },
+    { key: 'nextsteps', label: 'Next steps', color: 'secondary', emoji: '❓' },
+  ]
+
+  const markers = [
+    '📋 CURRENT STANDARD',
+    '🥗 LIFESTYLE & CARE',
+    '🔬 EMERGING RESEARCH',
+    '❓ NEXT STEPS',
+  ]
+
+  const altMarkers = [
+    '**CURRENT STANDARD**',
+    '**LIFESTYLE & CARE**',
+    '**EMERGING RESEARCH**',
+    '**NEXT STEPS',
+  ]
+
+  let workingText = text
+  altMarkers.forEach((alt, i) => {
+    workingText = workingText.replace(alt, markers[i])
+  })
+
+  const hasStructure = markers.some(m => workingText.includes(m))
+  if (!hasStructure) return null
+
+  const parts = {}
+  markers.forEach((marker, i) => {
+    const start = workingText.indexOf(marker)
+    if (start === -1) return
+    const nextStarts = markers
+      .slice(i + 1)
+      .map(m => workingText.indexOf(m))
+      .filter(idx => idx !== -1)
+    const end = nextStarts.length > 0 ? Math.min(...nextStarts) : workingText.length
+    parts[sections[i].key] = workingText.slice(start + marker.length, end).trim()
+  })
+
+  return { sections, parts }
+}
+
+function StructuredAnswer({ text }) {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map(p => p.replace(/\*\*/g, '').replace(/^\* /gm, '• ').trim())
+    .filter(p => p.length > 0)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {paragraphs.map((para, i) => (
+        <p
+          key={i}
+          style={{
+            fontSize: '14.5px',
+            lineHeight: 1.7,
+            color: 'var(--color-text-primary)',
+            margin: 0,
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {para}
+        </p>
+      ))}
+    </div>
+  )
 }
 
 function Message({ msg }) {
   return (
     <div className={`message ${msg.role}`}>
       <div className="bubble">
-        {msg.role === 'assistant' && (
-          <span className="role-icon">⚕</span>
-        )}
+        <div className={`avatar ${msg.role === 'assistant' ? 'assistant' : 'user-av'}`}>
+          {msg.role === 'assistant' ? '⚕' : '👤'}
+        </div>
         <div className="content">
-          <p>{msg.text}</p>
+          {msg.role === 'assistant'
+            ? <StructuredAnswer text={msg.text} />
+            : <p>{msg.text}</p>}
           {msg.sources?.length > 0 && (
             <div className="sources">
               {msg.sources.map((s, i) => <SourceBadge key={i} source={s} />)}
@@ -42,7 +118,7 @@ function TypingIndicator() {
   return (
     <div className="message assistant">
       <div className="bubble">
-        <span className="role-icon">⚕</span>
+        <div className="avatar assistant">⚕</div>
         <div className="typing">
           <span /><span /><span />
         </div>
@@ -52,13 +128,7 @@ function TypingIndicator() {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      text: 'Hello! I\'m MediQuery — a medical Q&A assistant trained on real clinical trial data, disease statistics, and FDA drug labels. Ask me anything about diseases, treatments, or clinical research.',
-      sources: [],
-    }
-  ])
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState(null)
@@ -105,66 +175,71 @@ export default function App() {
     }
   }
 
+  const showHero = messages.length === 0 && !loading
+
   return (
     <div className="app">
       <header>
-        <div className="header-inner">
-          <div className="logo">
-            <span className="logo-icon">⚕</span>
-            <div>
-              <h1>MediQuery</h1>
-              <p>Clinical AI Research Assistant</p>
-            </div>
-          </div>
-          {stats && (
-            <div className="stat-pills">
-              <span className="pill">{stats.total_documents?.toLocaleString()} docs</span>
-              <span className="pill">{stats.llm_provider?.toUpperCase()}</span>
-            </div>
-          )}
+        <div className="nav-left" />
+        <div className="nav-center">
+          <div className="nav-icon">⚕</div>
+          <h1>MediQuery</h1>
         </div>
+        <div className="nav-right" />
       </header>
 
       <main>
-        <div className="messages">
-          {messages.map((m, i) => <Message key={i} msg={m} />)}
-          {loading && <TypingIndicator />}
-          <div ref={bottomRef} />
-        </div>
-
-        {messages.length === 1 && !loading && (
-          <div className="suggestions">
-            {SUGGESTED.map((s, i) => (
-              <button key={i} className="suggestion" onClick={() => send(s)}>
-                {s}
-              </button>
-            ))}
+        {showHero ? (
+          <>
+            <div className="hero">
+              <div className="hero-icon">⚕</div>
+              <h2>What can I help you with?</h2>
+              <p>
+                Ask me anything about diseases, clinical trials, drug labels,
+                or medical research — powered by real public health data.
+              </p>
+            </div>
+            <div className="suggestions">
+              {SUGGESTED.map((s, i) => (
+                <button key={i} className="suggestion" onClick={() => send(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="messages">
+            {messages.map((m, i) => <Message key={i} msg={m} />)}
+            {loading && <TypingIndicator />}
+            <div ref={bottomRef} />
           </div>
         )}
       </main>
 
       <footer>
-        <div className="input-row">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            placeholder="Ask about diseases, treatments, clinical trials, drugs..."
-            rows={1}
-            disabled={loading}
-          />
-          <button
-            onClick={() => send()}
-            disabled={!input.trim() || loading}
-            className="send-btn"
-          >
-            {loading ? '...' : '→'}
-          </button>
+        <div className="input-wrap">
+          <div className="input-row">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Ask about diseases, treatments, clinical trials, drugs..."
+              rows={1}
+              disabled={loading}
+            />
+            <button
+              onClick={() => send()}
+              disabled={!input.trim() || loading}
+              className="send-btn"
+            >
+              →
+            </button>
+          </div>
+          <p className="disclaimer">
+            For informational purposes only. Not a substitute for professional medical advice.
+          </p>
         </div>
-        <p className="disclaimer">
-          For informational purposes only. Not a substitute for professional medical advice.
-        </p>
       </footer>
     </div>
   )

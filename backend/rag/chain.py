@@ -4,6 +4,7 @@ from langchain.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
+
 def _load_llm():
     provider = os.getenv("LLM_PROVIDER", "ollama").lower()
 
@@ -12,7 +13,7 @@ def _load_llm():
         return ChatGroq(
             groq_api_key=os.environ["GROQ_API_KEY"],
             model_name=os.getenv("GROQ_MODEL", "llama3-8b-8192"),
-            temperature=0.2,
+            temperature=0.3,
             max_tokens=1024,
         )
 
@@ -20,31 +21,27 @@ def _load_llm():
     return Ollama(
         base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
         model=os.getenv("OLLAMA_MODEL", "llama3"),
-        temperature=0.2,
+        temperature=0.3,
     )
-
 
 MEDICAL_PROMPT = PromptTemplate(
     input_variables=["context", "question"],
-    template="""You are MediQuery, a clinical AI assistant powered by real medical data from ClinicalTrials.gov, MedlinePlus, OpenFDA, WHO, and lab reference databases.
+    template="""You are MediQuery, a caring and knowledgeable clinical AI assistant. \
+Answer the question like a knowledgeable doctor speaking directly to a patient — warm, clear, and helpful.
 
-Use ONLY the context below to answer. Do not make up any medical facts, drug names, or statistics not present in the context.
+Use the context below as your primary source. If the context doesn't fully cover the question, \
+use your general medical knowledge to give a complete, helpful answer. Never say "not enough data" \
+or "I don't have information" — always provide something useful and related.
 
-Structure your answer in EXACTLY these 4 sections with NO introduction, NO preamble, NO "Here's my response". Start directly with the first emoji marker. If you don't have enough context for a section, write "Not enough data available."
+Structure your response naturally across these 4 areas, but DO NOT include the header names or emojis \
+as labels. Just write the content flowing naturally, separated by blank lines:
 
----
-📋 CURRENT STANDARD
-Approved medications, therapies, and clinical guidelines. Reference drug names and sources where possible.
+- What treatments, medications, or actions are currently recommended
+- What lifestyle changes, diet, or daily habits help
+- Any relevant research, clinical trials, or recent developments
+- 2-3 practical next steps or questions to ask a doctor
 
-🥗 LIFESTYLE & CARE
-Diet, exercise, daily management tips, and preventive measures.
-
-🔬 EMERGING RESEARCH
-Active clinical trials, pipeline treatments, or recent research findings from the context.
-
-❓ NEXT STEPS — QUESTIONS FOR YOUR DOCTOR
-3 specific questions the patient should ask their doctor based on this condition.
----
+Keep the tone conversational, not clinical. Use plain English. Be concise but complete.
 
 Context:
 {context}
@@ -59,7 +56,7 @@ def build_rag_chain(vectorstore: FAISS) -> RetrievalQA:
     llm = _load_llm()
     retriever = vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 5},
+        search_kwargs={"k": 6},
     )
     chain = RetrievalQA.from_chain_type(
         llm=llm,
