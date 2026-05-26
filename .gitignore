@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+backend/.env
+frontend/.env
+
+# FAISS index
+backend/vectorstore/faiss_index/
+
+# Node
+node_modules/
+dist/
+.vercel/
+
+# OS
+.DS_Store
+
+# Python version
+.python-version
+
+# Pycache
+**/__pycache__/
+frontend/.env
