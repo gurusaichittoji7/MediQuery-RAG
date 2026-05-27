@@ -211,6 +211,23 @@ export default function App() {
     fetchStats().then(setStats).catch(() => {})
   }, [])
 
+  // Load chat history from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('mediquery_history')
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved))
+      } catch (e) {}
+    }
+  }, [])
+
+  // Save chat history to localStorage on every message
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('mediquery_history', JSON.stringify(messages))
+    }
+  }, [messages])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
@@ -259,7 +276,27 @@ export default function App() {
           <div className="nav-icon">⚕</div>
           <h1>MediQuery</h1>
         </div>
-        <div className="nav-right" />
+        <div className="nav-right">
+          {messages.length > 0 && (
+            <button
+              onClick={() => {
+                setMessages([])
+                localStorage.removeItem('mediquery_history')
+              }}
+              style={{
+                background: 'none',
+                border: '0.5px solid var(--color-border-tertiary)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              Clear history
+            </button>
+          )}
+        </div>
       </header>
 
       <main>
