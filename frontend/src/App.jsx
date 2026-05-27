@@ -96,7 +96,7 @@ function EmergencyAlert({ text }) {
   )
 }
 
-function StructuredAnswer({ text }) {
+function StructuredAnswer({ text, icdCode }) {
   if (text.startsWith('EMERGENCY::')) {
     return <EmergencyAlert text={text} />
   }
@@ -119,6 +119,16 @@ function StructuredAnswer({ text }) {
           {para}
         </p>
       ))}
+      {icdCode && (
+        <p style={{
+          fontSize: '11px',
+          color: 'var(--color-text-secondary)',
+          marginTop: '8px',
+          fontFamily: 'monospace',
+        }}>
+          ICD-11: {icdCode}
+        </p>
+      )}
     </div>
   )
 }
@@ -132,7 +142,7 @@ function Message({ msg }) {
         </div>
         <div className="content">
           {msg.role === 'assistant'
-            ? <StructuredAnswer text={msg.text} />
+            ? <StructuredAnswer text={msg.text} icdCode={msg.icd_code} />
             : <p>{msg.text}</p>}
         </div>
       </div>
@@ -181,6 +191,7 @@ export default function App() {
         role: 'assistant',
         text: res.answer,
         sources: res.sources,
+        icd_code: res.icd_code,
       }])
     } catch (e) {
       setMessages(prev => [...prev, {

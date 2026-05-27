@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import Optional
 
 load_dotenv()
 
@@ -70,6 +71,7 @@ class QueryResponse(BaseModel):
     answer: str
     sources: list[str]
     source_count: int
+    icd_code: Optional[str] = None
 
 
 @app.get("/health")
@@ -103,6 +105,7 @@ async def query(request: QueryRequest):
         from rag.chain import run_query
         from api.news import fetch_health_news, is_current_events_query
         from api.triage import check_emergency
+        from api.icd_mapper import map_to_icd11
 
         # 🚨 Red flag check — bypasses LLM entirely
         emergency = check_emergency(request.question)
@@ -113,7 +116,18 @@ async def query(request: QueryRequest):
                 source_count=len(emergency['actions']),
             )
 
-        result = run_query(app_state["chain"], request.question)
+        # ICD-11 mapping — enriches the query with clinical codes
+        icd = map_to_icd11(request.question)
+        enriched_question = request.question
+        if icd:
+            enriched_question = (
+                f"{request.question} "
+                f"[ICD-11 Code: {icd['code']} — {icd['title']}]"
+            )
+
+        result = run_query(app_state["chain"], enriched_question)
+        if icd:
+            result["icd_code"] = f"{icd['code']} — {icd['title']}"
 
         if is_current_events_query(request.question):
             news = fetch_health_news(request.question)
