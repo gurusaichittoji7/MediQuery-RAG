@@ -134,6 +134,15 @@ function StructuredAnswer({ text, icdCode }) {
 }
 
 function Message({ msg }) {
+  const [copied, setCopied] = useState(false)
+
+  function copyAnswer() {
+    navigator.clipboard.writeText(msg.text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
   return (
     <div className={`message ${msg.role}`}>
       <div className="bubble">
@@ -178,6 +187,29 @@ function Message({ msg }) {
               <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', minWidth: '32px' }}>
                 {Math.round(msg.confidence * 100)}%
               </span>
+            </div>
+          )}
+          {msg.role === 'assistant' && !msg.text.startsWith('EMERGENCY::') && (
+            <div style={{
+              marginTop: '8px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}>
+              <button
+                onClick={copyAnswer}
+                style={{
+                  background: 'none',
+                  border: '0.5px solid var(--color-border-tertiary)',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  color: copied ? 'var(--color-text-success)' : 'var(--color-text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
             </div>
           )}
         </div>
