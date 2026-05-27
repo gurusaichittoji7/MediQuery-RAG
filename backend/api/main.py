@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
+from api.drug_safety import get_drug_safety, format_drug_safety
 
 load_dotenv()
 
@@ -124,6 +125,15 @@ async def query(request: QueryRequest):
                 answer=format_ddx_response(ddx),
                 sources=[],
                 source_count=0,
+                icd_code=None,
+            )
+# 💊 Drug safety layer
+        drug_safety = get_drug_safety(request.question)
+        if drug_safety and any(k in request.question.lower() for k in ["warning", "interaction", "side effect", "safe", "dose", "dosage", "contraindication", "cost", "tier", "price"]):
+            return QueryResponse(
+                answer=format_drug_safety(drug_safety),
+                sources=["openfda.gov", "drugs.com"],
+                source_count=2,
                 icd_code=None,
             )
 
