@@ -9,6 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 from api.drug_safety import get_drug_safety, format_drug_safety
+from api.cache import get_cached, set_cache
+from api.audit import log_query
+import time
 
 load_dotenv()
 
@@ -73,6 +76,7 @@ class QueryResponse(BaseModel):
     sources: list[str]
     source_count: int
     icd_code: Optional[str] = None
+    confidence: Optional[float] = None
 
 
 @app.get("/health")
@@ -87,12 +91,14 @@ def health():
 
 @app.get("/stats")
 def stats():
+    from api.cache import cache_stats
     summary = app_state.get("summary", {})
     return {
         "total_documents": summary.get("total_documents", 0),
         "categories": summary.get("categories", {}),
         "embedding_model": summary.get("embedding_model", "unknown"),
         "llm_provider": os.getenv("LLM_PROVIDER", "ollama"),
+        **cache_stats(),
     }
 
 @app.post("/query", response_model=QueryResponse)
@@ -127,6 +133,11 @@ async def query(request: QueryRequest):
                 source_count=0,
                 icd_code=None,
             )
+        # ⚡ Cache check — return instantly if same question asked before
+        cached = get_cached(request.question)
+        if cached:
+            return QueryResponse(**cached)
+
 # 💊 Drug safety layer
         drug_safety = get_drug_safety(request.question)
         if drug_safety and any(k in request.question.lower() for k in ["warning", "interaction", "side effect", "safe", "dose", "dosage", "contraindication", "cost", "tier", "price"]):
@@ -146,7 +157,10 @@ async def query(request: QueryRequest):
                 f"[ICD-11 Code: {icd['code']} — {icd['title']}]"
             )
 
+        start_ms = int(time.time() * 1000)
         result = run_query(app_state["chain"], enriched_question)
+        response_ms = int(time.time() * 1000) - start_ms
+
         if icd:
             result["icd_code"] = f"{icd['code']} — {icd['title']}"
 
@@ -159,10 +173,32 @@ async def query(request: QueryRequest):
                     f"{request.question}\n\n"
                     f"[LIVE NEWS CONTEXT - use this for recent developments]:\n{news_context}"
                 )
-                result = run_query(app_state["chain"], augmented_question)
-                result["sources"] = list(set(result["sources"] + news_sources))
-                result["source_count"] = len(result["sources"])
+                new_result = run_query(app_state["chain"], augmented_question)
+                new_result["sources"] = list(set(new_result["sources"] + news_sources))
+                new_result["source_count"] = len(new_result["sources"])
+                new_result["icd_code"] = result.get("icd_code")
+                result = new_result
 
+        log_query(
+            question=request.question,
+            answer=result["answer"],
+            sources=result["sources"],
+            icd_code=result.get("icd_code"),
+            confidence=result.get("confidence"),
+            query_type="rag",
+            response_ms=response_ms,
+        )
+# Store in cache
+        set_cache(request.question, result)
         return QueryResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/logs")
+def get_logs(limit: int = 20):
+    from api.audit import LOG_FILE
+    if not LOG_FILE.exists():
+        return {"logs": []}
+    lines = LOG_FILE.read_text().strip().split("\n")
+    recent = [json.loads(l) for l in lines[-limit:] if l]
+    return {"logs": recent, "total": len(lines)}

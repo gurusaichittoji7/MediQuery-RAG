@@ -144,6 +144,42 @@ function Message({ msg }) {
           {msg.role === 'assistant'
             ? <StructuredAnswer text={msg.text} icdCode={msg.icd_code} />
             : <p>{msg.text}</p>}
+          {msg.role === 'assistant' && msg.confidence !== undefined && (
+            <div style={{
+              marginTop: '10px',
+              paddingTop: '10px',
+              borderTop: '0.5px solid var(--color-border-tertiary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                Confidence
+              </span>
+              <div style={{
+                flex: 1,
+                height: '4px',
+                background: 'var(--color-background-secondary)',
+                borderRadius: '4px',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${msg.confidence * 100}%`,
+                  height: '100%',
+                  background: msg.confidence > 0.7
+                    ? 'var(--color-text-success)'
+                    : msg.confidence > 0.4
+                    ? 'var(--color-text-warning)'
+                    : 'var(--color-text-danger)',
+                  borderRadius: '4px',
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', minWidth: '32px' }}>
+                {Math.round(msg.confidence * 100)}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -192,6 +228,7 @@ export default function App() {
         text: res.answer,
         sources: res.sources,
         icd_code: res.icd_code,
+        confidence: res.confidence,
       }])
     } catch (e) {
       setMessages(prev => [...prev, {

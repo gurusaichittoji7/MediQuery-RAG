@@ -68,15 +68,20 @@ def build_rag_chain(vectorstore: FAISS) -> RetrievalQA:
     )
     return chain
 
-
 def run_query(chain: RetrievalQA, question: str) -> dict:
     result = chain.invoke({"query": question})
+
+    source_docs = result.get("source_documents", [])
     sources = list({
         doc.metadata.get("source", "unknown")
-        for doc in result.get("source_documents", [])
+        for doc in source_docs
     })
+
+    confidence = round(min(len(sources) / 5, 1.0), 2)
+
     return {
         "answer": result["result"],
         "sources": sources,
         "source_count": len(sources),
+        "confidence": confidence,
     }
