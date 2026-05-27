@@ -106,6 +106,7 @@ async def query(request: QueryRequest):
         from api.news import fetch_health_news, is_current_events_query
         from api.triage import check_emergency
         from api.icd_mapper import map_to_icd11
+        from api.ddx import check_ddx, format_ddx_response
 
         # 🚨 Red flag check — bypasses LLM entirely
         emergency = check_emergency(request.question)
@@ -114,6 +115,16 @@ async def query(request: QueryRequest):
                 answer=f"EMERGENCY::{emergency['title']}::{emergency['message']}::{emergency['disclaimer']}",
                 sources=[a['label'] for a in emergency['actions']],
                 source_count=len(emergency['actions']),
+            )
+
+        # 🧠 DDx clarifying questions for ambiguous symptoms
+        ddx = check_ddx(request.question)
+        if ddx:
+            return QueryResponse(
+                answer=format_ddx_response(ddx),
+                sources=[],
+                source_count=0,
+                icd_code=None,
             )
 
         # ICD-11 mapping — enriches the query with clinical codes
