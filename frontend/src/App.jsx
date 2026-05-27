@@ -58,7 +58,49 @@ function parseAnswer(text) {
   return { sections, parts }
 }
 
+function EmergencyAlert({ text }) {
+  const parts = text.replace('EMERGENCY::', '').split('::')
+  const title = parts[0] || ''
+  const message = parts[1] || ''
+  const disclaimer = parts[2] || ''
+
+  const isMentalHealth = title.includes('💙')
+
+  return (
+    <div style={{
+      border: `2px solid ${isMentalHealth ? 'var(--color-border-info)' : 'var(--color-border-danger)'}`,
+      borderRadius: '12px',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        background: isMentalHealth ? 'var(--color-background-info)' : 'var(--color-background-danger)',
+        padding: '12px 16px',
+      }}>
+        <p style={{
+          fontSize: '15px',
+          fontWeight: 500,
+          color: isMentalHealth ? 'var(--color-text-info)' : 'var(--color-text-danger)',
+          margin: 0,
+        }}>{title}</p>
+      </div>
+      <div style={{ padding: '14px 16px', background: 'var(--color-background-primary)' }}>
+        <p style={{ fontSize: '14px', lineHeight: 1.65, margin: '0 0 12px' }}>{message}</p>
+        <p style={{
+          fontSize: '12px',
+          color: 'var(--color-text-secondary)',
+          margin: 0,
+          fontStyle: 'italic',
+        }}>{disclaimer}</p>
+      </div>
+    </div>
+  )
+}
+
 function StructuredAnswer({ text }) {
+  if (text.startsWith('EMERGENCY::')) {
+    return <EmergencyAlert text={text} />
+  }
+
   const paragraphs = text
     .split(/\n{2,}/)
     .map(p => p.replace(/\*\*/g, '').replace(/^\* /gm, '• ').trim())
@@ -67,16 +109,13 @@ function StructuredAnswer({ text }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {paragraphs.map((para, i) => (
-        <p
-          key={i}
-          style={{
-            fontSize: '14.5px',
-            lineHeight: 1.7,
-            color: 'var(--color-text-primary)',
-            margin: 0,
-            whiteSpace: 'pre-wrap',
-          }}
-        >
+        <p key={i} style={{
+          fontSize: '14.5px',
+          lineHeight: 1.7,
+          color: 'var(--color-text-primary)',
+          margin: 0,
+          whiteSpace: 'pre-wrap',
+        }}>
           {para}
         </p>
       ))}

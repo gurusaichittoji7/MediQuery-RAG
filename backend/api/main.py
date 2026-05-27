@@ -92,7 +92,6 @@ def stats():
         "llm_provider": os.getenv("LLM_PROVIDER", "ollama"),
     }
 
-
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest):
     if "chain" not in app_state:
@@ -102,7 +101,33 @@ async def query(request: QueryRequest):
         )
     try:
         from rag.chain import run_query
+        from api.news import fetch_health_news, is_current_events_query
+        from api.triage import check_emergency
+
+        # 🚨 Red flag check — bypasses LLM entirely
+        emergency = check_emergency(request.question)
+        if emergency:
+            return QueryResponse(
+                answer=f"EMERGENCY::{emergency['title']}::{emergency['message']}::{emergency['disclaimer']}",
+                sources=[a['label'] for a in emergency['actions']],
+                source_count=len(emergency['actions']),
+            )
+
         result = run_query(app_state["chain"], request.question)
+
+        if is_current_events_query(request.question):
+            news = fetch_health_news(request.question)
+            if news:
+                news_context = "\n".join([n["text"] for n in news])
+                news_sources = [n["source"] for n in news]
+                augmented_question = (
+                    f"{request.question}\n\n"
+                    f"[LIVE NEWS CONTEXT - use this for recent developments]:\n{news_context}"
+                )
+                result = run_query(app_state["chain"], augmented_question)
+                result["sources"] = list(set(result["sources"] + news_sources))
+                result["source_count"] = len(result["sources"])
+
         return QueryResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
