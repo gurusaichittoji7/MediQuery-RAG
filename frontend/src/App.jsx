@@ -446,6 +446,10 @@ export default function App() {
   }, [messages, loading])
 
   async function send(question) {
+    if (listening) {
+      window._recognition?.stop()
+      setListening(false)
+    }
     const q = (question || input).trim()
     if (!q || loading) return
     setInput('')
@@ -475,6 +479,10 @@ export default function App() {
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      if (listening) {
+        window._recognition?.stop()
+        setListening(false)
+      }
       send()
     }
   }
@@ -483,15 +491,31 @@ const [listening, setListening] = useState(false)
   function startListening() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) return
+
+    if (listening) {
+      window._recognition?.stop()
+      setListening(false)
+      return
+    }
+
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-US'
-    recognition.interimResults = false
+    recognition.interimResults = true
+    recognition.continuous = true
+
+    window._recognition = recognition
+
     recognition.onstart = () => setListening(true)
     recognition.onend = () => setListening(false)
     recognition.onerror = () => setListening(false)
+
     recognition.onresult = (event) => {
-      setInput(event.results[0][0].transcript)
+      const transcript = Array.from(event.results)
+        .map(r => r[0].transcript)
+        .join('')
+      setInput(transcript)
     }
+
     recognition.start()
   }
   const showHero = messages.length === 0 && !loading
