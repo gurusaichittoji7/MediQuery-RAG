@@ -125,9 +125,18 @@ main {
   max-width: 860px;
   width: 100%;
   margin: 0 auto;
+  scrollbar-gutter: stable;
 }
 main::-webkit-scrollbar { width: 4px; }
-main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+main::-webkit-scrollbar-thumb { background: var(--color-border-tertiary); border-radius: 4px; }
+main::-webkit-scrollbar-track { background: transparent; }
+
+/* Push scrollbar to far right edge */
+html {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-tertiary) transparent;
+}
 
 /* ── Welcome hero ── */
 .hero {

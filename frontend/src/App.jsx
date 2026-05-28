@@ -478,7 +478,22 @@ export default function App() {
       send()
     }
   }
+const [listening, setListening] = useState(false)
 
+  function startListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-US'
+    recognition.interimResults = false
+    recognition.onstart = () => setListening(true)
+    recognition.onend = () => setListening(false)
+    recognition.onerror = () => setListening(false)
+    recognition.onresult = (event) => {
+      setInput(event.results[0][0].transcript)
+    }
+    recognition.start()
+  }
   const showHero = messages.length === 0 && !loading
 
   return (
@@ -545,6 +560,32 @@ export default function App() {
               rows={1}
               disabled={loading}
             />
+            <button
+              onClick={startListening}
+              disabled={loading}
+              title="Speak"
+              style={{
+                background: listening ? 'var(--color-background-danger)' : 'none',
+                border: 'none',
+                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                color: listening ? 'var(--color-text-danger)' : 'var(--color-text-secondary)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={listening ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
             <button
               onClick={() => send()}
               disabled={!input.trim() || loading}
