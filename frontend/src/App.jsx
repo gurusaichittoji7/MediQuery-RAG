@@ -1,4 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import { auth } from './firebase'
+import { onAuthStateChanged } from 'firebase/auth'
+import { signOutUser } from './firebase'
+import LandingPage from './LandingPage'
 import { queryMediQuery, fetchStats, submitFeedback } from './lib/api'
 import './index.css'
 
