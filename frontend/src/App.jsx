@@ -97,10 +97,121 @@ function EmergencyAlert({ text }) {
   )
 }
 
+function DosageCalculator({ drug }) {
+  const [weight, setWeight] = useState('')
+  const [unit, setUnit] = useState('kg')
+  const [result, setResult] = useState(null)
+
+  const DOSAGE_RULES = {
+    metformin: { mgPerKg: null, fixedDose: '500–2550mg/day', note: 'Fixed dosing — not weight-based. Start at 500mg twice daily with meals.' },
+    ibuprofen: { mgPerKg: 10, maxDose: 400, note: 'Children: 5–10mg/kg every 6–8hrs. Adults: 200–400mg every 4–6hrs. Max 1200mg/day OTC.' },
+    amoxicillin: { mgPerKg: 25, maxDose: 500, note: 'Standard: 25mg/kg/day divided every 8hrs. Severe infections: 40mg/kg/day.' },
+    lisinopril: { mgPerKg: null, fixedDose: '10–40mg once daily', note: 'Fixed dosing — not weight-based. Start at 10mg/day.' },
+    aspirin: { mgPerKg: null, fixedDose: '81mg (heart) or 325–650mg (pain)', note: 'Fixed dosing. Do not use in children under 16.' },
+  }
+
+  const rule = DOSAGE_RULES[drug?.toLowerCase()]
+  if (!rule) return null
+
+  function calculate() {
+    const w = parseFloat(weight)
+    if (!w || w <= 0) return
+    const weightKg = unit === 'lbs' ? w * 0.453592 : w
+
+    if (rule.fixedDose) {
+      setResult({ dose: rule.fixedDose, note: rule.note })
+    } else {
+      const dose = Math.min(rule.mgPerKg * weightKg, rule.maxDose)
+      setResult({
+        dose: `${Math.round(dose)}mg per dose`,
+        note: rule.note,
+      })
+    }
+  }
+
+  return (
+    <div style={{
+      marginTop: '12px',
+      background: 'var(--color-background-secondary)',
+      borderRadius: '10px',
+      padding: '14px 16px',
+      border: '0.5px solid var(--color-border-tertiary)',
+    }}>
+      <p style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
+        💊 Dosage Calculator — {drug.charAt(0).toUpperCase() + drug.slice(1)}
+      </p>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
+        <input
+          type="number"
+          placeholder="Weight"
+          value={weight}
+          onChange={e => setWeight(e.target.value)}
+          style={{
+            width: '100px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            border: '0.5px solid var(--color-border-tertiary)',
+            background: 'var(--color-background-primary)',
+            color: 'var(--color-text-primary)',
+            fontSize: '13px',
+          }}
+        />
+        <select
+          value={unit}
+          onChange={e => setUnit(e.target.value)}
+          style={{
+            padding: '6px 10px',
+            borderRadius: '6px',
+            border: '0.5px solid var(--color-border-tertiary)',
+            background: 'var(--color-background-primary)',
+            color: 'var(--color-text-primary)',
+            fontSize: '13px',
+          }}
+        >
+          <option value="kg">kg</option>
+          <option value="lbs">lbs</option>
+        </select>
+        <button
+          onClick={calculate}
+          style={{
+            background: 'var(--color-background-info)',
+            border: '0.5px solid var(--color-border-info)',
+            borderRadius: '6px',
+            padding: '6px 14px',
+            fontSize: '13px',
+            color: 'var(--color-text-info)',
+            cursor: 'pointer',
+          }}
+        >
+          Calculate
+        </button>
+      </div>
+      {result && (
+        <div style={{
+          background: 'var(--color-background-primary)',
+          borderRadius: '8px',
+          padding: '10px 12px',
+          border: '0.5px solid var(--color-border-success)',
+        }}>
+          <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-success)', margin: '0 0 4px' }}>
+            {result.dose}
+          </p>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+            {result.note}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StructuredAnswer({ text, icdCode }) {
   if (text.startsWith('EMERGENCY::')) {
     return <EmergencyAlert text={text} />
   }
+
+  const TRACKED_DRUGS = ['metformin', 'ibuprofen', 'amoxicillin', 'lisinopril', 'aspirin']
+  const detectedDrug = TRACKED_DRUGS.find(d => text.toLowerCase().includes(d))
 
   const paragraphs = text
     .split(/\n{2,}/)
@@ -130,6 +241,7 @@ function StructuredAnswer({ text, icdCode }) {
           ICD-11: {icdCode}
         </p>
       )}
+      {detectedDrug && <DosageCalculator drug={detectedDrug} />}
     </div>
   )
 }
