@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { queryMediQuery, fetchStats } from './lib/api'
+import { queryMediQuery, fetchStats, submitFeedback } from './lib/api'
 import './index.css'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
 function SourceBadge({ source }) {
   if (source.includes('clinicaltrials')) return <span className="badge trials">🔬 ClinicalTrials</span>
   if (source.includes('disease.sh')) return <span className="badge disease">🦠 Disease.sh</span>
@@ -133,8 +134,9 @@ function StructuredAnswer({ text, icdCode }) {
   )
 }
 
-function Message({ msg }) {
+function Message({ msg, setMessages }) {
   const [copied, setCopied] = useState(false)
+  const [feedback, setFeedback] = useState(null)
 
   function copyAnswer() {
     navigator.clipboard.writeText(msg.text).then(() => {
@@ -191,24 +193,91 @@ function Message({ msg }) {
           )}
           {msg.role === 'assistant' && !msg.text.startsWith('EMERGENCY::') && (
             <div style={{
-              marginTop: '8px',
+              marginTop: '10px',
               display: 'flex',
-              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '4px',
             }}>
               <button
                 onClick={copyAnswer}
+                title="Copy"
                 style={{
                   background: 'none',
-                  border: '0.5px solid var(--color-border-tertiary)',
+                  border: 'none',
                   borderRadius: '6px',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  color: copied ? 'var(--color-text-success)' : 'var(--color-text-secondary)',
+                  padding: '6px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s',
+                  color: copied ? 'var(--color-text-success)' : 'var(--color-text-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'color 0.15s',
                 }}
               >
-                {copied ? '✓ Copied' : 'Copy'}
+                {copied
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                }
+              </button>
+              <button
+                onClick={() => {
+  console.log('clicked up, current feedback:', feedback)
+  submitFeedback(msg.text.slice(0, 100), 'up').catch(() => {})
+  setFeedback('up')
+}}
+                title="Good response"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  color: feedback === 'up' ? 'var(--color-text-success)' : 'var(--color-text-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'color 0.15s',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={feedback === 'up' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+              </button>
+              <button
+                onClick={() => {
+                  submitFeedback(msg.text.slice(0, 100), 'down').catch(() => {})
+                  setFeedback('down')
+                }}
+                title="Bad response"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  color: feedback === 'down' ? 'var(--color-text-danger)' : 'var(--color-text-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'color 0.15s',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={feedback === 'down' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+              </button>
+              <button
+                onClick={() => {
+                  setMessages(prev => prev.filter((_, i) => i < prev.findIndex(m => m === msg) ))
+                  localStorage.removeItem('mediquery_history')
+                }}
+                title="Retry"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'color 0.15s',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
               </button>
             </div>
           )}
@@ -345,7 +414,7 @@ export default function App() {
           </>
         ) : (
           <div className="messages">
-            {messages.map((m, i) => <Message key={i} msg={m} />)}
+            {messages.map((m, i) => <Message key={i} msg={m} setMessages={setMessages} />)}
             {loading && <TypingIndicator />}
             <div ref={bottomRef} />
           </div>

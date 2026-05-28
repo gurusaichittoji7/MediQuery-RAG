@@ -18,3 +18,12 @@ export async function fetchStats() {
   if (!res.ok) return null
   return res.json()
 }
+export async function submitFeedback(question, feedback) {
+  const res = await fetch(`${API_URL}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, feedback }),
+  })
+  if (!res.ok) throw new Error('Feedback failed')
+  return res.json()
+}

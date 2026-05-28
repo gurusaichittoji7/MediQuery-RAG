@@ -12,6 +12,7 @@ from api.drug_safety import get_drug_safety, format_drug_safety
 from api.cache import get_cached, set_cache
 from api.audit import log_query
 import time
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -202,3 +203,21 @@ def get_logs(limit: int = 20):
     lines = LOG_FILE.read_text().strip().split("\n")
     recent = [json.loads(l) for l in lines[-limit:] if l]
     return {"logs": recent, "total": len(lines)}
+
+class FeedbackRequest(BaseModel):
+    question: str
+    feedback: str  # "up" or "down"
+
+@app.post("/feedback")
+async def feedback(request: FeedbackRequest):
+    from api.audit import LOG_DIR
+    import json
+    feedback_file = LOG_DIR / "feedback.log"
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "question": request.question[:300],
+        "feedback": request.feedback,
+    }
+    with open(feedback_file, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+    return {"status": "ok"}
