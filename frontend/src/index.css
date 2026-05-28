@@ -135,8 +135,15 @@ main::-webkit-scrollbar-track { background: transparent; }
 html {
   overflow-y: scroll;
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border-tertiary) transparent;
+  scrollbar-color: #cbd5e1 transparent;
 }
+
+main::-webkit-scrollbar { width: 5px; }
+main::-webkit-scrollbar-thumb { 
+  background: #cbd5e1; 
+  border-radius: 4px; 
+}
+main::-webkit-scrollbar-track { background: transparent; }
 
 /* ── Welcome hero ── */
 .hero {
