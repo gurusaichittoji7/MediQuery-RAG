@@ -221,3 +221,64 @@ async def feedback(request: FeedbackRequest):
     with open(feedback_file, "a") as f:
         f.write(json.dumps(entry) + "\n")
     return {"status": "ok"}
+
+@app.get("/admin/stats")
+def admin_stats():
+    from api.audit import LOG_FILE, LOG_DIR
+    from api.cache import cache_stats
+    import json
+
+    stats = {
+        "total_queries": 0,
+        "avg_confidence": 0,
+        "query_types": {},
+        "top_questions": [],
+        "feedback": {"up": 0, "down": 0},
+        "cache": cache_stats(),
+        "recent_queries": [],
+    }
+
+    # Parse audit log
+    if LOG_FILE.exists():
+        lines = [l for l in LOG_FILE.read_text().strip().split("\n") if l]
+        entries = []
+        for l in lines:
+            try:
+                entries.append(json.loads(l))
+            except:
+                continue
+
+        stats["total_queries"] = len(entries)
+        confidences = [e.get("confidence", 0) for e in entries if e.get("confidence")]
+        stats["avg_confidence"] = round(sum(confidences) / len(confidences), 2) if confidences else 0
+
+        for e in entries:
+            qt = e.get("query_type", "rag")
+            stats["query_types"][qt] = stats["query_types"].get(qt, 0) + 1
+
+        stats["recent_queries"] = [
+            {
+                "question": e.get("question", ""),
+                "confidence": e.get("confidence"),
+                "icd_code": e.get("icd_code"),
+                "response_ms": e.get("response_ms"),
+                "timestamp": e.get("timestamp", ""),
+            }
+            for e in entries[-10:]
+        ][::-1]
+
+    # Parse feedback log
+    feedback_file = LOG_DIR / "feedback.log"
+    if feedback_file.exists():
+        for l in feedback_file.read_text().strip().split("\n"):
+            if not l:
+                continue
+            try:
+                entry = json.loads(l)
+                fb = entry.get("feedback", "")
+                if fb in ("up", "down"):
+                    stats["feedback"][fb] += 1
+            except:
+                continue
+
+    return stats

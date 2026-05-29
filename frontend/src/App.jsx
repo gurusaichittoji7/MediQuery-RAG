@@ -5,6 +5,7 @@ import { signOutUser } from './firebase'
 import LandingPage from './LandingPage'
 import { queryMediQuery, fetchStats, submitFeedback } from './lib/api'
 import './index.css'
+import AdminDashboard from './AdminDashboard'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
 function SourceBadge({ source }) {
@@ -418,6 +419,7 @@ function TypingIndicator() {
 
 export default function App() {
   const [user, setUser] = useState(undefined) // undefined = loading, null = logged out
+  const [showAdmin, setShowAdmin] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -534,6 +536,9 @@ const [listening, setListening] = useState(false)
     </div>
   )
   if (!user) return <LandingPage onLogin={setUser} />
+  if (showAdmin && user?.email === 'gurusaic3x@gmail.com') {
+    return <AdminDashboard user={user} onBack={() => setShowAdmin(false)} />
+  }
 
   const showHero = messages.length === 0 && !loading
 
@@ -564,6 +569,7 @@ const [listening, setListening] = useState(false)
             >
               Clear
             </button>
+            
           )}
           {user?.photoURL && (
             <img src={user.photoURL} alt="avatar" style={{
@@ -586,6 +592,22 @@ const [listening, setListening] = useState(false)
           >
             Sign out
           </button>
+          {user?.email === 'gurusaic3x@gmail.com' && (
+            <button
+              onClick={() => setShowAdmin(true)}
+              style={{
+                background: 'none',
+                border: '0.5px solid var(--color-border-tertiary)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              Admin
+            </button>
+          )}
         </div>
       </header>
 
