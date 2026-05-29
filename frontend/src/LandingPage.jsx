@@ -26,11 +26,11 @@ export default function LandingPage({ onLogin }) {
     },
     {
       q: 'How does MediQuery prevent AI hallucinations?',
-      a: 'Traditional AI models guess based on patterns. MediQuery uses a strict RAG grounding framework — it pulls exact reference documents from verified medical databases and forces the AI to only summarize those specific texts. If the answer isn\'t in the data, it won\'t make it up.',
+      a: 'Traditional AI models guess based on patterns. MediQuery uses a strict RAG grounding framework. It pulls exact reference documents from verified medical databases and forces the AI to only summarize those specific texts. If the answer isn\'t in the data, it won\'t make it up.',
     },
     {
       q: 'Where does the data come from?',
-      a: 'All answers are extracted from verified public datasets including ClinicalTrials.gov (400k+ trials), OpenFDA (100k+ drug labels), WHO Global Health Observatory, MedlinePlus, and real-time health news from CDC and NIH.',
+      a: 'All answers are extracted from verified public datasets including ClinicalTrials.gov (400k+ trials), OpenFDA (100k+ drug labels), WHO Global Health Observatory, MedlinePlus, and real time health news from CDC and NIH.',
     },
     {
       q: 'Is my personal health data safe?',
@@ -38,7 +38,7 @@ export default function LandingPage({ onLogin }) {
     },
     {
       q: 'Can I use this for professional clinical research?',
-      a: 'MediQuery maps data to ICD-11 codes, retrieves active clinical trials, and surfaces drug safety profiles — making it a powerful rapid discovery tool. All generated citations should be cross-referenced with official sources for formal clinical decisions.',
+      a: 'MediQuery maps data to ICD-11 codes, retrieves active clinical trials, and surfaces drug safety profiles, making it a powerful rapid discovery tool. All generated citations should be cross referenced with official sources for formal clinical decisions.',
     },
   ]
 
@@ -107,7 +107,7 @@ export default function LandingPage({ onLogin }) {
             fontSize: '17px', color: '#64748b', lineHeight: 1.7,
             marginBottom: '16px', maxWidth: '480px',
           }}>
-            Hospital-grade accuracy for everyone. MediQuery is a clinical AI assistant
+            Hospital grade accuracy for everyone. MediQuery is a clinical AI assistant
             powered by real verified medical data. Ask about diseases, drug interactions,
             clinical trials, and get grounded answers instantly.
           </p>
@@ -177,10 +177,10 @@ export default function LandingPage({ onLogin }) {
             color: '#0f172a', textAlign: 'center',
             fontWeight: 400, marginBottom: '12px',
           }}>
-            Enterprise-grade clinical intelligence
+            Enterprise grade clinical intelligence
           </h2>
           <p style={{ textAlign: 'center', color: '#64748b', fontSize: '15px', marginBottom: '48px' }}>
-            Hospital-grade accuracy for everyone, not just clinicians.
+            Hospital grade accuracy for everyone, not just clinicians.
           </p>
           <div style={{
             display: 'grid',
@@ -277,7 +277,7 @@ export default function LandingPage({ onLogin }) {
               borderRadius: '8px', padding: '12px 16px',
               fontSize: '13px', color: '#166534', lineHeight: 1.6,
             }}>
-              ⚕ <strong>MediQuery:</strong> For Type 2 diabetes, metformin hydrochloride is typically the first-line medication. Active clinical trial NCT04215523 is investigating dapagliflozin for improved outcomes. ICD-11 Code: 5A10.
+              ⚕ <strong>MediQuery:</strong> For Type 2 diabetes, metformin hydrochloride is typically the first line medication. Active clinical trial NCT04215523 is investigating dapagliflozin for improved outcomes. ICD-11 Code: 5A10.
             </div>
           </div>
         </div>
@@ -379,7 +379,7 @@ export default function LandingPage({ onLogin }) {
           color: '#ffffff', fontWeight: 400, marginBottom: '16px',
         }}>Ready to get started?</h2>
         <p style={{ fontSize: '16px', color: '#94a3b8', marginBottom: '32px' }}>
-          Hospital-grade medical intelligence, available to everyone.
+          Hospital grade medical intelligence, available to everyone.
         </p>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button onClick={handleGoogleLogin} disabled={loading} style={{
