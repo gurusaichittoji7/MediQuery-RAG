@@ -65,7 +65,7 @@ export default function LandingPage({ onLogin }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           {['Features', 'How it works', 'About', 'FAQ'].map(item => (
-            <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} style={{
+            <a key={item} href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} style={{
               fontSize: '14px', color: '#64748b', textDecoration: 'none',
             }}>{item}</a>
           ))}
