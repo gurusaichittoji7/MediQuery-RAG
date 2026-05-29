@@ -12,7 +12,7 @@ def _load_llm():
         from langchain_groq import ChatGroq
         return ChatGroq(
             groq_api_key=os.environ["GROQ_API_KEY"],
-            model_name=os.getenv("GROQ_MODEL", "llama3-8b-8192"),
+            model_name=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
             temperature=0.3,
             max_tokens=1024,
         )
