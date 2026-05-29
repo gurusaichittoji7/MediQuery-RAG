@@ -417,12 +417,18 @@ function TypingIndicator() {
 }
 
 export default function App() {
+  const [user, setUser] = useState(undefined) // undefined = loading, null = logged out
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState(null)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u))
+    return () => unsub()
+  }, [])
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => {})
@@ -522,6 +528,13 @@ const [listening, setListening] = useState(false)
 
     recognition.start()
   }
+  if (user === undefined) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <p style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
+    </div>
+  )
+  if (!user) return <LandingPage onLogin={setUser} />
+
   const showHero = messages.length === 0 && !loading
 
   return (
@@ -532,7 +545,7 @@ const [listening, setListening] = useState(false)
           <div className="nav-icon">⚕</div>
           <h1>MediQuery</h1>
         </div>
-        <div className="nav-right">
+        <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {messages.length > 0 && (
             <button
               onClick={() => {
@@ -549,9 +562,30 @@ const [listening, setListening] = useState(false)
                 cursor: 'pointer',
               }}
             >
-              Clear history
+              Clear
             </button>
           )}
+          {user?.photoURL && (
+            <img src={user.photoURL} alt="avatar" style={{
+              width: '28px', height: '28px',
+              borderRadius: '50%',
+              border: '1px solid var(--color-border-tertiary)',
+            }} />
+          )}
+          <button
+            onClick={() => { signOutUser(); setUser(null) }}
+            style={{
+              background: 'none',
+              border: '0.5px solid var(--color-border-tertiary)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
