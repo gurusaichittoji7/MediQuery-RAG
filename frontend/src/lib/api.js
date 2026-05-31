@@ -27,10 +27,9 @@ export async function submitFeedback(question, feedback) {
   if (!res.ok) throw new Error('Feedback failed')
   return res.json()
 }
-export async function uploadFile(file, question = '') {
+export async function uploadFile(file, question = '', history = []) {
   let fileToUpload = file
 
-  // Compress images before upload
   if (file.type.startsWith('image/')) {
     fileToUpload = await compressImage(file, 512)
   }
@@ -38,6 +37,9 @@ export async function uploadFile(file, question = '') {
   const formData = new FormData()
   formData.append('file', fileToUpload, file.name)
   if (question) formData.append('question', question)
+  if (history.length > 0) {
+    formData.append('history', JSON.stringify(history.slice(-4)))
+  }
 
   const res = await fetch(`${API_URL}/upload`, {
     method: 'POST',

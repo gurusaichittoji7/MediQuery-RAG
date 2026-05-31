@@ -585,7 +585,11 @@ export default function App() {
         attachment: file.name,
       }])
       try {
-        const res = await uploadFile(file, q || '')
+        const res = await uploadFile(
+        file,
+        q || '',
+        messages.map(m => ({ role: m.role, content: m.text }))
+      )
         setMessages(prev => [...prev, {
           role: 'assistant',
           text: res.answer,
