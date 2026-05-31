@@ -146,11 +146,11 @@ User Query
 
 ### Backend Setup
 ```bash
-# 1. Clone repo
+# 1.
 git clone https://github.com/gurusaichittoji7/MediQuery-RAG.git
 cd MediQuery-RAG/backend
 
-# 2. Create virtual environment
+# 2. Create virtual environmen
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
@@ -186,19 +186,7 @@ Open: http://localhost:5173
 
 ---
 
-## 📡 API Reference
 
-### `POST /query`
-```json
-{
-  "question": "What are the treatments for Type 2 diabetes?",
-  "history": [
-    { "role": "user", "content": "I have diabetes" },
-    { "role": "assistant", "content": "..." }
-  ]
-}
-```
-Returns: `answer`, `sources`, `confidence`, `icd_code`
 
 ### `POST /upload`
 Multipart form: `file` (PDF/DOCX/TXT/image) + `question` + `history`
