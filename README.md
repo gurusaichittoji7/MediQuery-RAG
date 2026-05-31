@@ -39,7 +39,7 @@ User Query
     │
     ▼
 ┌─────────────────────────────────────────────────┐
-│              SAFETY LAYER (Zero Latency)         │
+│              SAFETY LAYER (Zero Latency)        │
 │  🚨 Emergency Triage → 911 Alert (bypasses LLM) │
 │  🧠 DDx Clarifier → Follow-up questions         │
 │  💊 Drug Safety → Interactions + Tier           │
@@ -47,7 +47,7 @@ User Query
     │
     ▼
 ┌─────────────────────────────────────────────────┐
-│              RAG PIPELINE                        │
+│              RAG PIPELINE                       │
 │  ICD-11 Mapping → Enrich query with codes       │
 │  FAISS Vector Search → Top-5 relevant docs      │
 │  Live News Injection → WHO/CDC/NIH articles     │
@@ -56,7 +56,7 @@ User Query
     │
     ▼
 ┌─────────────────────────────────────────────────┐
-│              KNOWLEDGE BASE (306 docs)           │
+│              KNOWLEDGE BASE (306 docs)          │
 │  🔬 ClinicalTrials.gov — 80 active trials       │
 │  💊 OpenFDA — 30 drug labels                    │
 │  📚 MedlinePlus — 75 health topics              │
