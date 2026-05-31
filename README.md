@@ -72,8 +72,8 @@ User Query
 ## ✨ Features
 
 ### Clinical Intelligence
-- **🚨 Emergency Triage Guardrail** — Hardcoded symptom lookup bypasses LLM entirely. Crushing chest pain → instant 911 alert in milliseconds
-- **🧠 ICD-11 Mapping** — Every query mapped to standardized clinical codes (same system used by hospitals worldwide)
+- **🚨 Emergency Triage Guardrail** - Hardcoded symptom lookup bypasses LLM entirely. Crushing chest pain → instant 911 alert in milliseconds
+- **🧠 ICD-11 Mapping** - Every query mapped to standardized clinical codes (same system used by hospitals worldwide)
 - **🔍 DDx Assistance** — Ambiguous symptoms trigger clarifying questions like a real clinical workflow
 - **💊 Drug Safety Layer** — Full interaction checker, formulary tiers (Tier 1/2/3), demographic contraindications, pharmacokinetics
 - **💉 Dosage Calculator** — Weight-based dosing for common medications
