@@ -854,7 +854,7 @@ export default function App() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder={pendingFile ? "Ask a question about this file... (or press → to summarize)" : "Ask about diseases, treatments, clinical trials, drugs..."}
+                placeholder={pendingFile ? `Ask about this ${pendingFile.type?.includes('image') ? 'image' : 'document'}... (or press → to analyze)` : "Ask about diseases, treatments, clinical trials, drugs..."}
                 rows={1}
                 disabled={loading || uploadLoading}
               />

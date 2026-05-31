@@ -159,9 +159,10 @@ async def query(request: QueryRequest):
         icd = map_to_icd11(request.question)
         enriched_question = request.question
         if icd:
+            default_doc_q = question if question.strip() else "Summarize this document and highlight any important medical findings, diagnoses, medications, lab values, or health recommendations."
             enriched_question = (
-                f"{request.question} "
-                f"[ICD-11 Code: {icd['code']} — {icd['title']}]"
+                f"{default_doc_q}\n\n"
+                f"[DOCUMENT CONTENT — {parsed['filename']}]:\n{doc_context}"
             )
 
         start_ms = int(time.time() * 1000)
@@ -293,13 +294,12 @@ def admin_stats():
 @app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    question: str = Form(default="Summarize this document and highlight any important medical findings.")
+    question: str = Form(default="")
 ):
     try:
         from api.file_parser import parse_file
         from rag.chain import run_query
 
-        # Read file bytes
         file_bytes = await file.read()
         parsed = parse_file(file.filename, file_bytes)
 
@@ -307,9 +307,9 @@ async def upload_file(
             raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
 
         if parsed["type"] == "image":
-            # Use Groq vision model for images
             from groq import Groq
             client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+            default_q = question if question.strip() else "Describe what you see in this image. If there are any medical conditions, symptoms, skin issues, rashes, injuries, or health-related concerns visible, identify them and provide relevant medical information and treatment options."
             response = client.chat.completions.create(
                 model="meta-llama/llama-4-scout-17b-16e-instruct",
                 messages=[
@@ -324,7 +324,7 @@ async def upload_file(
                             },
                             {
                                 "type": "text",
-                                "text": f"You are MediQuery, a clinical AI assistant. {question} Focus on any medical information, symptoms, medications, lab values, or health indicators visible in this image."
+                                "text": f"You are MediQuery, a clinical AI assistant. {default_q}"
                             }
                         ]
                     }
@@ -334,11 +334,10 @@ async def upload_file(
             answer = response.choices[0].message.content
 
         else:
-            # Text-based file — inject into RAG chain
-            doc_context = parsed["content"]
+            default_doc_q = question if question.strip() else "Summarize this document and highlight any important medical findings, diagnoses, medications, lab values, or health recommendations."
             enriched_question = (
-                f"{question}\n\n"
-                f"[DOCUMENT CONTENT — {parsed['filename']}]:\n{doc_context}"
+                f"{default_doc_q}\n\n"
+                f"[DOCUMENT CONTENT — {parsed['filename']}]:\n{parsed['content']}"
             )
             if "chain" not in app_state:
                 raise HTTPException(status_code=503, detail="RAG index not loaded.")
