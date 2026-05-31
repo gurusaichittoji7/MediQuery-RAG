@@ -3,9 +3,9 @@ import { auth } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { signOutUser } from './firebase'
 import LandingPage from './LandingPage'
-import { queryMediQuery, fetchStats, submitFeedback } from './lib/api'
 import './index.css'
 import AdminDashboard from './AdminDashboard'
+import { queryMediQuery, fetchStats, submitFeedback, uploadFile } from './lib/api'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
 function SourceBadge({ source }) {
@@ -251,6 +251,87 @@ function StructuredAnswer({ text, icdCode }) {
   )
 }
 
+function PlusMenu({ onFile, onCamera, isMobile }) {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
+
+  const options = isMobile
+    ? [
+        { icon: '📄', label: 'Upload PDF / DOCX / TXT', action: () => { onFile(); setOpen(false) } },
+        { icon: '🖼️', label: 'Upload Image', action: () => { onFile(); setOpen(false) } },
+        { icon: '📷', label: 'Take Photo', action: () => { onCamera(); setOpen(false) } },
+      ]
+    : [
+        { icon: '📄', label: 'Upload PDF / DOCX / TXT', action: () => { onFile(); setOpen(false) } },
+        { icon: '🖼️', label: 'Upload Image', action: () => { onFile(); setOpen(false) } },
+      ]
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Attach file"
+        style={{
+          background: open ? 'var(--color-background-secondary)' : 'none',
+          border: 'none', borderRadius: '10px',
+          width: '40px', height: '40px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+          color: 'var(--color-text-secondary)',
+          transition: 'all 0.15s',
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', bottom: '52px', left: 0,
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px', overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          zIndex: 100, minWidth: '200px',
+        }}>
+          {options.map((item, i) => (
+            <button
+              key={i}
+              onClick={item.action}
+              style={{
+                width: '100%', padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                background: 'none', border: 'none',
+                cursor: 'pointer', textAlign: 'left',
+                fontSize: '13px', color: '#0f172a',
+                fontFamily: 'DM Sans, sans-serif',
+                borderBottom: i < options.length - 1 ? '1px solid #f1f5f9' : 'none',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <span style={{ fontSize: '16px' }}>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 function Message({ msg, setMessages }) {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState(null)
@@ -271,7 +352,23 @@ function Message({ msg, setMessages }) {
         <div className="content">
           {msg.role === 'assistant'
             ? <StructuredAnswer text={msg.text} icdCode={msg.icd_code} />
-            : <p>{msg.text}</p>}
+            : (
+              <div>
+                {msg.attachment && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    marginBottom: '6px',
+                    padding: '4px 10px',
+                    background: 'rgba(255,255,255,0.15)',
+                    borderRadius: '6px', fontSize: '12px',
+                  }}>
+                    <span>{msg.attachment.match(/\.(jpg|jpeg|png|webp)$/i) ? '🖼️' : '📄'}</span>
+                    <span>{msg.attachment}</span>
+                  </div>
+                )}
+                <p>{msg.text}</p>
+              </div>
+            )}
           {msg.role === 'assistant' && msg.confidence !== undefined && (
             <div style={{
               marginTop: '10px',
@@ -426,6 +523,11 @@ export default function App() {
   const [stats, setStats] = useState(null)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [pendingFile, setPendingFile] = useState(null)
+  const [listening, setListening] = useState(false)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u))
@@ -457,14 +559,55 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
+  function handleFileSelect(file) {
+    if (!file) return
+    setPendingFile(file)
+    inputRef.current?.focus()
+  }
+
   async function send(question) {
     if (listening) {
       window._recognition?.stop()
       setListening(false)
     }
     const q = (question || input).trim()
-    if (!q || loading) return
+    if (!q && !pendingFile) return
+    if (loading || uploadLoading) return
+
     setInput('')
+    if (pendingFile) {
+      const file = pendingFile
+      setPendingFile(null)
+      setUploadLoading(true)
+      setMessages(prev => [...prev, {
+        role: 'user',
+        text: q || `Summarize this document and highlight any important medical findings.`,
+        attachment: file.name,
+      }])
+      try {
+        const res = await uploadFile(file, q || '')
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          text: res.answer,
+          sources: res.sources,
+          icd_code: res.icd_code,
+          confidence: res.confidence,
+        }])
+      } catch (e) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          text: `Sorry, couldn't process the file: ${e.message}`,
+          sources: [],
+        }])
+      } finally {
+        setUploadLoading(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        if (cameraInputRef.current) cameraInputRef.current.value = ''
+        inputRef.current?.focus()
+      }
+      return
+    }
+
     setMessages(prev => [...prev, { role: 'user', text: q }])
     setLoading(true)
     try {
@@ -488,6 +631,34 @@ export default function App() {
     }
   }
 
+  async function handleFileUpload(file) {
+    if (!file) return
+    setUploadLoading(true)
+    const fileMsg = `📎 Uploaded: ${file.name}`
+    setMessages(prev => [...prev, { role: 'user', text: fileMsg }])
+    try {
+      const res = await uploadFile(file, input.trim() || '')
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: res.answer,
+        sources: res.sources,
+        icd_code: res.icd_code,
+        confidence: res.confidence,
+      }])
+      setInput('')
+    } catch (e) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: `Sorry, couldn't process the file: ${e.message}`,
+        sources: [],
+      }])
+    } finally {
+      setUploadLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+    }
+  }
+
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -498,8 +669,6 @@ export default function App() {
       send()
     }
   }
-const [listening, setListening] = useState(false)
-
   function startListening() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) return
@@ -634,49 +803,90 @@ const [listening, setListening] = useState(false)
 
       <footer>
         <div className="input-wrap">
-          <div className="input-row">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Ask about diseases, treatments, clinical trials, drugs..."
-              rows={1}
-              disabled={loading}
-            />
-            <button
-              onClick={startListening}
-              disabled={loading}
-              title="Speak"
-              style={{
-                background: listening ? 'var(--color-background-danger)' : 'none',
-                border: 'none',
-                borderRadius: '10px',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-                color: listening ? 'var(--color-text-danger)' : 'var(--color-text-secondary)',
-                transition: 'all 0.15s',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={listening ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => send()}
-              disabled={!input.trim() || loading}
-              className="send-btn"
-            >
-              →
-            </button>
+          <div className="input-row" style={{ flexDirection: 'column', alignItems: 'stretch', padding: pendingFile ? '8px 8px 8px 12px' : undefined }}>
+            {pendingFile && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '6px 8px',
+                background: 'var(--color-background-secondary)',
+                borderRadius: '8px', marginBottom: '6px',
+              }}>
+                <span style={{ fontSize: '16px' }}>
+                  {pendingFile.type.includes('image') ? '🖼️' : '📄'}
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-primary)', flex: 1 }}>
+                  {pendingFile.name}
+                </span>
+                <button
+                  onClick={() => { setPendingFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                  style={{
+                    background: 'none', border: 'none',
+                    cursor: 'pointer', fontSize: '14px',
+                    color: 'var(--color-text-secondary)',
+                    padding: '0 4px',
+                  }}
+                >✕</button>
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.doc,.txt,.jpg,.jpeg,.png,.webp"
+                style={{ display: 'none' }}
+                onChange={e => handleFileSelect(e.target.files[0])}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={e => handleFileSelect(e.target.files[0])}
+              />
+              <PlusMenu
+                onFile={() => fileInputRef.current?.click()}
+                onCamera={() => cameraInputRef.current?.click()}
+                isMobile={window.innerWidth < 768}
+              />
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder={pendingFile ? "Ask a question about this file... (or press → to summarize)" : "Ask about diseases, treatments, clinical trials, drugs..."}
+                rows={1}
+                disabled={loading || uploadLoading}
+              />
+              <button
+                onClick={startListening}
+                disabled={loading || uploadLoading}
+                title="Speak"
+                style={{
+                  background: listening ? 'var(--color-background-danger)' : 'none',
+                  border: 'none', borderRadius: '10px',
+                  width: '40px', height: '40px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', flexShrink: 0,
+                  color: listening ? 'var(--color-text-danger)' : 'var(--color-text-secondary)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={listening ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </button>
+              <button
+                onClick={() => send()}
+                disabled={(!input.trim() && !pendingFile) || loading || uploadLoading}
+                className="send-btn"
+              >
+                {loading || uploadLoading ? '...' : '→'}
+              </button>
+            </div>
           </div>
           <p className="disclaimer">
             For informational purposes only. Not a substitute for professional medical advice.

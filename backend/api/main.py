@@ -13,6 +13,7 @@ from api.cache import get_cached, set_cache
 from api.audit import log_query
 import time
 from datetime import datetime, timezone
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 
 load_dotenv()
 
@@ -282,3 +283,73 @@ def admin_stats():
                 continue
 
     return stats
+
+@app.post("/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    question: str = Form(default="Summarize this document and highlight any important medical findings.")
+):
+    try:
+        from api.file_parser import parse_file
+        from rag.chain import run_query
+
+        # Read file bytes
+        file_bytes = await file.read()
+        parsed = parse_file(file.filename, file_bytes)
+
+        if parsed["type"] == "unsupported":
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
+
+        if parsed["type"] == "image":
+            # Use Groq vision model for images
+            from groq import Groq
+            client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+            response = client.chat.completions.create(
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{parsed['media_type']};base64,{parsed['content']}"
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": f"You are MediQuery, a clinical AI assistant. {question} Focus on any medical information, symptoms, medications, lab values, or health indicators visible in this image."
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=1024,
+            )
+            answer = response.choices[0].message.content
+
+        else:
+            # Text-based file — inject into RAG chain
+            doc_context = parsed["content"]
+            enriched_question = (
+                f"{question}\n\n"
+                f"[DOCUMENT CONTENT — {parsed['filename']}]:\n{doc_context}"
+            )
+            if "chain" not in app_state:
+                raise HTTPException(status_code=503, detail="RAG index not loaded.")
+            result = run_query(app_state["chain"], enriched_question)
+            answer = result["answer"]
+
+        return {
+            "answer": answer,
+            "filename": parsed["filename"],
+            "type": parsed["type"],
+            "sources": [f"Uploaded: {parsed['filename']}"],
+            "source_count": 1,
+            "confidence": 0.9,
+            "icd_code": None,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
