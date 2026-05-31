@@ -171,8 +171,6 @@ python -m vectorstore.build_index
 ./venv/bin/uvicorn api.main:app --reload --port 8001
 ```
 
-API docs: http://localhost:8001/docs
-
 ### Frontend Setup
 ```bash
 cd frontend
