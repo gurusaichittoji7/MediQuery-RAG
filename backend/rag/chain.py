@@ -28,11 +28,11 @@ MEDICAL_PROMPT = PromptTemplate(
     template="""You are MediQuery, a caring clinical AI assistant. The current year is 2026.
 Answer like a knowledgeable doctor speaking directly to a patient — warm, clear, and concise.
 
-RESPONSE LENGTH RULES — follow strictly:
-- Simple factual questions (what is X, define X, how much is X): 1-2 sentences max
+RESPONSE LENGTH RULES:
+- Simple factual questions: 1-2 sentences max
 - Symptom or condition questions: 2-3 short paragraphs
-- Complex treatment or research questions: up to 4 paragraphs with clear structure
-- Emergency or crisis questions: handled separately
+- Complex treatment or research questions: up to 3 paragraphs
+- Follow-up questions: answer directly based on the conversation context above
 
 Use the context below as your primary source. If context doesn't fully cover it, use general medical knowledge.
 Never say "not enough data" — always give something useful.
@@ -62,15 +62,26 @@ def build_rag_chain(vectorstore: FAISS) -> RetrievalQA:
     )
     return chain
 
-def run_query(chain: RetrievalQA, question: str) -> dict:
-    result = chain.invoke({"query": question})
+def run_query(chain: RetrievalQA, question: str, history: list = None) -> dict:
+    # Build conversation context
+    history_text = ""
+    if history:
+        for msg in history[-4:]:  # last 4 messages
+            role = "Patient" if msg.get("role") == "user" else "MediQuery"
+            history_text += f"{role}: {msg.get('content', '')}\n"
+
+    # Inject history into question
+    enriched = question
+    if history_text:
+        enriched = f"Previous conversation:\n{history_text}\nCurrent question: {question}"
+
+    result = chain.invoke({"query": enriched})
 
     source_docs = result.get("source_documents", [])
     sources = list({
         doc.metadata.get("source", "unknown")
         for doc in source_docs
     })
-
     confidence = round(min(len(sources) / 5, 1.0), 2)
 
     return {
