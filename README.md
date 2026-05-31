@@ -19,14 +19,14 @@
 
 ---
 
-## 🧠 What Makes This Different from ChatGPT/Claude
+## 🧠 What Makes This Different from Other AI Agents
 
 | | Other AI Agents | MediQuery |
 |---|---|---|
 | **Knowledge source** | Baked into model weights at training time | Retrieved from verified medical databases at query time |
 | **Hallucination risk** | High for medical facts | Low — forced to answer only from retrieved context |
 | **Data freshness** | Knowledge cutoff date | Live data from ClinicalTrials.gov, WHO, OpenFDA at every query |
-| **Emergency handling** | Gives advice, may delay action | Hard-coded bypass — instant 911 alert, zero LLM involved |
+| **Emergency handling** | Gives advice, may delay action | Hard-coded bypass, instant 911 alert, zero LLM involved |
 | **Clinical grounding** | No ICD codes, no trial IDs | ICD-11 mapped, NCT IDs cited, FDA label references |
 | **Auditability** | Black box | Every query logged with confidence score, source, timestamp |
 
