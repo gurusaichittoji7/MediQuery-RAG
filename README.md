@@ -1,6 +1,6 @@
 # MediQuery RAG 🏥
 
-> **Hospital-grade clinical AI assistant** powered by real medical data — not just a chatbot.
+> **Hospital grade clinical AI assistant** powered by real medical data, not just a chatbot.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-medi--query--rag.vercel.app-blue?style=for-the-badge)](https://medi-query-rag.vercel.app)
 [![Backend](https://img.shields.io/badge/Backend-HuggingFace%20Spaces-yellow?style=for-the-badge)](https://huggingface.co/spaces/Gurusaic/mediquery-api)
