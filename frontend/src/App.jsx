@@ -734,15 +734,15 @@ export default function App() {
                 background: 'none',
                 border: '0.5px solid var(--color-border-tertiary)',
                 borderRadius: '8px',
-                padding: '6px 12px',
+                padding: '6px 10px',
                 fontSize: '12px',
                 color: 'var(--color-text-secondary)',
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
               }}
             >
               Clear
             </button>
-            
           )}
           {user?.photoURL && (
             <img src={user.photoURL} alt="avatar" style={{

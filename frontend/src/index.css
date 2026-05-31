@@ -377,14 +377,23 @@ textarea::placeholder { color: var(--muted); }
     height: 56px;
   }
 
+.nav-left {
+    min-width: 60px;
+  }
+
+  .nav-right {
+    min-width: 60px;
+    gap: 4px;
+  }
+
   .nav-center h1 {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .nav-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 15px;
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
   }
 
   main {
