@@ -21,7 +21,7 @@
 
 ## 🧠 What Makes This Different from ChatGPT/Claude
 
-| | ChatGPT / Claude | MediQuery |
+| | Other AI Agents | MediQuery |
 |---|---|---|
 | **Knowledge source** | Baked into model weights at training time | Retrieved from verified medical databases at query time |
 | **Hallucination risk** | High for medical facts | Low — forced to answer only from retrieved context |
