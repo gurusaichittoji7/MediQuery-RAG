@@ -32,7 +32,7 @@ export async function uploadFile(file, question = '') {
 
   // Compress images before upload
   if (file.type.startsWith('image/')) {
-    fileToUpload = await compressImage(file, 800)
+    fileToUpload = await compressImage(file, 512)
   }
 
   const formData = new FormData()
@@ -76,7 +76,7 @@ function compressImage(file, maxWidth = 800) {
           resolve(new File([blob], file.name, { type: 'image/jpeg' }))
         },
         'image/jpeg',
-        0.7
+        0.5
       )
     }
 
