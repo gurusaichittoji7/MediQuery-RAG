@@ -186,20 +186,6 @@ Open: http://localhost:5173
 
 ---
 
----
-
-## 🎯 Interview Talking Points
-
-- **RAG vs parametric models** — Why retrieval grounding matters for healthcare (hallucination risk)
-- **FAISS index design** — Chunking strategy for medical text, keeping NCT IDs and condition names in same chunk
-- **Emergency guardrail** — Zero-latency bypass, why LLM should never be in the critical path for life-threatening symptoms
-- **Dual LLM support** — Ollama locally, Groq in production — swap via single env var
-- **Confidence scoring** — Ratio of unique retrieved sources as a proxy for answer reliability
-- **ICD-11 mapping** — Bridging to real EHR systems (Epic, Cerner use ICD codes for everything)
-- **HIPAA-conscious design** — Zero PHI retention, audit logging, anonymization
-
----
-
 ## 📊 Data Sources
 
 | Source | Data Type | Records |
