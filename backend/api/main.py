@@ -69,8 +69,13 @@ app.add_middleware(
 )
 
 
+class ConversationMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=3, max_length=500)
+    history: list[ConversationMessage] = []
 
 
 class QueryResponse(BaseModel):
@@ -160,7 +165,8 @@ async def query(request: QueryRequest):
             )
 
         start_ms = int(time.time() * 1000)
-        result = run_query(app_state["chain"], enriched_question)
+        result = run_query(app_state["chain"], enriched_question, 
+                          [{"role": m.role, "content": m.content} for m in request.history])
         response_ms = int(time.time() * 1000) - start_ms
 
         if icd:
