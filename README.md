@@ -186,20 +186,6 @@ Open: http://localhost:5173
 
 ---
 
-
-
-### `POST /upload`
-Multipart form: `file` (PDF/DOCX/TXT/image) + `question` + `history`
-
-### `GET /health`
-Returns API readiness and LLM provider status.
-
-### `GET /stats`
-Returns index stats, document counts, cache metrics.
-
-### `GET /admin/stats`
-Returns query logs, confidence averages, feedback counts. *(Admin only)*
-
 ---
 
 ## 🎯 Interview Talking Points
